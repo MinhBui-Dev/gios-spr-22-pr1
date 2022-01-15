@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 
   // Parse and set command line arguments
   while ((option_char =
-              getopt_long(argc, argv, "hx:m:p", gLongOptions, NULL)) != -1) {
+              getopt_long(argc, argv, "hx:m:p:", gLongOptions, NULL)) != -1) {
     switch (option_char) {
       case 'm':  // server
         maxnpending = atoi(optarg);
