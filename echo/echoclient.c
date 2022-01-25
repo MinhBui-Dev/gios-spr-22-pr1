@@ -12,6 +12,8 @@
 // A buffer large enough to contain the longest allowed string 
 #define BUFSIZE 256
 
+#define MAXBUFFER 16
+
 #define USAGE                                                          \
   "usage:\n"                                                           \
   "  echoclient [options]\n"                                           \
@@ -79,4 +81,70 @@ int main(int argc, char **argv) {
   }
 
   /* Socket Code Here */
+
+  char portNoChar[6];       //store port number in char
+  char buffer[MAXBUFFER];   //allocate max buffer size for send()/recv()
+  int serverSocket ; //serverSocket is socket descriptor for client to connet to 
+  struct addrinfo hints, *servinfo, *p; //struct addrinfo to hold revelant information regarding socket address
+  int status, messageLen, sendByte, recvByte; //status is used to stored return getaddrinfo, sendByte stored the actual number of byte send
+                                  //recvByte store the number bytes receives
+
+  sprintf(portNoChar, "%d", portno);
+
+  memset(&hints,0,sizeof hints); //make sure that hints is empty
+  hints.ai_family = AF_UNSPEC;  //Doesn't care whether IPv4 or IPv6
+  hints.ai_socktype = SOCK_STREAM; //set to stream socket
+
+  if ((status = getaddrinfo(hostname,portNoChar,&hints,&servinfo)) != 0) 
+  {
+    fprintf(stderr,"[CLIENT] Failed to get address information: %s\n",gai_strerror(status));
+    exit(1);
+  }
+
+  //loop through servinfo until connect() success
+  for (p = servinfo; p != NULL; p->ai_next)
+  {
+    //calling socket() to get socket descriptor file
+    if ((serverSocket = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
+    {
+      printf("Socket error: %s\n", strerror(errno)); //if socket() return -1, print out error message
+      continue;
+    }
+
+    if (connect(serverSocket,p->ai_addr,p->ai_addrlen) == -1)
+    {
+      printf("[CLIENT] Failure to connect(): %s\n", strerror(errno)); //if connect() return -1, print out error message
+      continue;
+    }
+    
+    break;
+    
+  }
+
+  freeaddrinfo(&servinfo); //free up servinfo struct 
+  
+  messageLen = strlen(message);
+
+  //send message to the connect()ing serverSocket
+  if ((sendByte = send(serverSocket,message,messageLen,0)) == -1)
+  {
+    printf("[CLIENT] Failure to send() message: %s\n", strerror(errno)); //print out error message if send() return -1
+  }
+  
+  if (sendByte != buffer)
+  {
+    printf("[CLIENT] Message sent incomplete: %d of Bytes sent", sendByte);
+  }
+  
+  //recv echo message from the connect()ing serverSocket
+
+  if ((recvByte = recv(serverSocket,buffer,MAXBUFFER-1,0)) == -1)
+  {
+    printf("[CLIENT] Failed to receive response: %s\n", strerror(errno));
+  }
+  
+  buffer[recvByte]= '\0'; //add null-terminated to message received
+
+  printf("[CLIENT] Received Message: %s", buffer); //print out message echo back from server
+
 }
