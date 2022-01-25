@@ -102,7 +102,7 @@ int main(int argc, char **argv) {
   }
 
   //loop through servinfo until connect() success
-  for (p = servinfo; p != NULL; p->ai_next)
+  for (p = servinfo; p != NULL; p = p->ai_next)
   {
     //calling socket() to get socket descriptor file
     if ((serverSocket = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
