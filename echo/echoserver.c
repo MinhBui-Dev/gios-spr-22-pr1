@@ -11,6 +11,8 @@
 
 #define BUFSIZE 256
 
+#define MAXBUFFER 16
+
 #define USAGE                                                        \
   "usage:\n"                                                         \
   "  echoserver [options]\n"                                         \
@@ -65,4 +67,108 @@ int main(int argc, char **argv) {
   }
 
   // Socket Code Here
+  char portNoChar[6]; //store port number in string
+  char buffer[MAXBUFFER]; //allocate max buffer size for recv()/send()
+  int serverSocket, clientSocket; //serverSocket to listen() for incoming connection
+                                  //clientSocket to recv()/send() to client
+  struct addrinfo hints, *servinfo,*p; //struc addrinfo to hold address info
+  int status, recvByte, sendByte; //to store return from send()/recv()
+  int yes = 1; //set option value for setsockopt 
+  struct sockaddr_storage clientAddr; //use to store incoming connection information
+  socklen_t clientAddrSize; 
+
+
+  sprintf(portNoChar,"%d",portno); //convert port number from int to string
+
+  memset(&hints,0, sizeof hints); //make sure hints is emptty
+  hints.ai_family = AF_UNSPEC; //Make compatible with both IPv4 and IPv6
+  hints.ai_socktype = SOCK_STREAM; //set type to stream socket
+  hints.ai_flags = AI_PASSIVE; //fill out IP automatically
+
+  //call getaddrinfo() to fill out struc addrinfo pointed by servinfo
+  if ((status = getaddrinfo(NULL,portNoChar,&hints,&servinfo))!= 0)
+  {
+    fprintf(stderr,"[SERVER] Failed to get address information: %s\n",gai_strerror(status));
+    exit(1);
+  }
+
+  //loop through all result in pointed by servinfo until bind() successfully
+  for (p = servinfo; p != NULL; p = p->ai_next)
+  {
+    //calling socket() to get socket file descriptor
+    if ((serverSocket = socket(p->ai_family,p->ai_socktype,p->ai_protocol)) == -1)
+    {
+      printf("[SERVER] Socket error: %s\n", strerror(errno)); //if socket() return -1, print out error message
+      continue;
+    }
+
+    //setsockopt to resuse address for bind()
+    if ((setsockopt(serverSocket,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(yes)))==-1)
+    {
+      printf("[SERVER] Failed to reuse address: %s\n", strerror(errno));
+      continue;
+    }
+    //bind() serverSocket to the portnumber stored inside linkedlist pointed by servinfo
+    if ((bind(serverSocket,p->ai_addr,p->ai_addrlen))== -1)
+    {
+      printf("[SERVER] Failed to bind: %s\n", strerror(errno));
+      continue;
+    }
+
+    break;   
+  }
+  
+  
+  //check to see if server successfully bind() to a port
+  if (p == NULL)
+  {
+    printf("[SERVER] Failed to bind: %s\n", strerror(errno));
+    exit(1);
+  }
+  
+  if(listen(serverSocket, maxnpending) == -1)
+  {
+    printf("[SERVER] Failed to listen(): %s\n", strerror(errno));
+    exit(1);
+  }
+  
+  freeaddrinfo(servinfo); //free up servinfo struct 
+  
+  while(1)
+  {
+    //create a new seperate socket file descriptor for incoming connection using accept()
+    clientAddrSize = sizeof(clientAddr);
+    if ((clientSocket = accept(serverSocket,(struct sockaddr*)&clientAddr,&clientAddrSize)) == -1)
+    {
+      printf("[SERVER] accept() error: %s\n", strerror(errno));
+    }
+
+    if ((recvByte = recv(clientSocket,buffer,MAXBUFFER -1,0)) == -1)
+    {
+      printf("[SERVER] Failed to receive from client socket: %s\n", strerror(errno));
+    }
+    
+    buffer[recvByte] = '\0';
+    printf("Max buffer %d and Byte received %d", MAXBUFFER,recvByte);
+    printf("[SERVER] Message received from Client: %s\n", buffer);
+
+
+    sendByte = send(clientSocket, buffer, MAXBUFFER,0);
+    /*if ((sendByte = send(clientSocket, buffer, MAXBUFFER,0))== -1 )
+    {
+      printf("[SERVER] Failed to send message to client socket: %s", strerror(errno));
+    }
+    */
+    
+    if (sendByte != (MAXBUFFER))
+    {
+      printf("Message sent incomplete: %d number of bytes sent", sendByte);
+    }
+    
+    printf("Server send byte %d", sendByte);
+    
+  }
+
+  
+
 }

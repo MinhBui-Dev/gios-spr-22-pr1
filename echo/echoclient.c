@@ -124,8 +124,9 @@ int main(int argc, char **argv) {
   if (p == NULL)
   {
     printf("[CLIENT] Failed to connect to server address!\n");
+    exit(1);
   }
-  
+
   freeaddrinfo(servinfo); //free up servinfo struct 
   
   messageLen = strlen(message);
