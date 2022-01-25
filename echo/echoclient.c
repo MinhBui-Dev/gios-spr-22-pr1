@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
     
   }
 
-  freeaddrinfo(&servinfo); //free up servinfo struct 
+  freeaddrinfo(servinfo); //free up servinfo struct 
   
   messageLen = strlen(message);
 
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
     printf("[CLIENT] Failure to send() message: %s\n", strerror(errno)); //print out error message if send() return -1
   }
   
-  if (sendByte != buffer)
+  if (sendByte != messageLen)
   {
     printf("[CLIENT] Message sent incomplete: %d of Bytes sent", sendByte);
   }
