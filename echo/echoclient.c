@@ -145,6 +145,6 @@ int main(int argc, char **argv) {
   
   buffer[recvByte]= '\0'; //add null-terminated to message received
 
-  printf("[CLIENT] Received Message: %s", buffer); //print out message echo back from server
+  printf("%s", buffer); //print out message echo back from server
 
 }
