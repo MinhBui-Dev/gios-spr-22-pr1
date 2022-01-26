@@ -129,9 +129,8 @@ int main(int argc, char **argv) {
 
   freeaddrinfo(servinfo); //free up servinfo struct 
   
-  while (1)
-  {
-    messageLen = strlen(message);
+  
+  messageLen = strlen(message);
 
   //send message to the connect()ing serverSocket
   if ((sendByte = send(serverSocket,message,messageLen,0)) == -1)
@@ -144,9 +143,9 @@ int main(int argc, char **argv) {
     printf("[CLIENT] Message sent incomplete: %d of Bytes sent", sendByte);
   }
   
-  printf("Message sent: %s and Byte sent: %d", message, sendByte);
-  //recv echo message from the connect()ing serverSocket
+  //printf("Message sent: %s and Byte sent: %d\n", message, sendByte); //test to see #Bytes sent
 
+  //recv echo message from the connect()ing serverSocket
   if ((recvByte = recv(serverSocket,buffer,MAXBUFFER-1,0)) == -1)
   {
     printf("[CLIENT] Failed to receive response: %s\n", strerror(errno));
@@ -154,9 +153,9 @@ int main(int argc, char **argv) {
   
   buffer[recvByte]= '\0'; //add null-terminated to message received
 
-  printf("%s", buffer); //print out message echo back from server
-  }
+  printf("[CLIENT] Received echo from [SERVER]: %s\n", buffer); //print out message echo back from server
+
   
-  
+  close(serverSocket);
 
 }

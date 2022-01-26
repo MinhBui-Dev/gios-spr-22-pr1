@@ -114,7 +114,6 @@ int main(int argc, char **argv) {
       printf("[SERVER] Failed to bind: %s\n", strerror(errno));
       continue;
     }
-
     break;   
   }
   
@@ -143,6 +142,7 @@ int main(int argc, char **argv) {
       printf("[SERVER] accept() error: %s\n", strerror(errno));
     }
 
+    //call accept() to accept any incoming message from clientSocket
     if ((recvByte = recv(clientSocket,buffer,MAXBUFFER -1,0)) == -1)
     {
       printf("[SERVER] Failed to receive from client socket: %s\n", strerror(errno));
@@ -150,12 +150,11 @@ int main(int argc, char **argv) {
     
     buffer[recvByte] = '\0'; //add null-terminated to buffer string
     
-    //printf("Max buffer %d and Byte received %d", MAXBUFFER,recvByte);
-
+    //printf("Max buffer %d and Byte received %d", MAXBUFFER,recvByte)
     //printf("[SERVER] Message received from Client: %s\n", buffer);  
 
 
-    //call send() to echo back message receive from client
+    //call send() to echo back message receive from client @clientSocket
     if ((sendByte = send(clientSocket, buffer, MAXBUFFER,0)) == -1 )
     {
       printf("[SERVER] Failed to send message to client socket: %s", strerror(errno));
@@ -170,6 +169,6 @@ int main(int argc, char **argv) {
     
   }
 
-  
+  close(serverSocket);
 
 }
