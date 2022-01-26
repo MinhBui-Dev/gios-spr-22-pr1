@@ -148,24 +148,25 @@ int main(int argc, char **argv) {
       printf("[SERVER] Failed to receive from client socket: %s\n", strerror(errno));
     }
     
-    buffer[recvByte] = '\0';
-    printf("Max buffer %d and Byte received %d", MAXBUFFER,recvByte);
-    printf("[SERVER] Message received from Client: %s\n", buffer);
+    buffer[recvByte] = '\0'; //add null-terminated to buffer string
+    
+    //printf("Max buffer %d and Byte received %d", MAXBUFFER,recvByte);
+
+    //printf("[SERVER] Message received from Client: %s\n", buffer);  
 
 
-    sendByte = send(clientSocket, buffer, MAXBUFFER,0);
-    /*if ((sendByte = send(clientSocket, buffer, MAXBUFFER,0))== -1 )
+    //call send() to echo back message receive from client
+    if ((sendByte = send(clientSocket, buffer, MAXBUFFER,0)) == -1 )
     {
       printf("[SERVER] Failed to send message to client socket: %s", strerror(errno));
     }
-    */
     
     if (sendByte != (MAXBUFFER))
     {
       printf("Message sent incomplete: %d number of bytes sent", sendByte);
     }
     
-    printf("Server send byte %d", sendByte);
+    close(clientSocket);
     
   }
 
