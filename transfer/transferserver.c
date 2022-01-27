@@ -70,9 +70,9 @@ int main(int argc, char **argv) {
   char portNoChar[6]; //store port number in string
   char buffer[BUFSIZE]; //allocate max buffer size for recv()/send()
   int serverSocket, clientSocket; //serverSocket to listen() for incoming connection
-                                  //clientSocket to recv()/send() to client
+                                  //clientSocket to send() to client
   struct addrinfo hints, *servinfo,*p; //struc addrinfo to hold address info
-  int status, recvByte, sendByte; //to store return from send()/recv()
+  int status, sendByte; //to store return from send()
   int yes = 1; //set option value for setsockopt 
   struct sockaddr_storage clientAddr; //use to store incoming connection information
   socklen_t clientAddrSize; 
@@ -146,6 +146,7 @@ int main(int argc, char **argv) {
 
     printf("Server accepted connection....\n");
 
+    //create new file descriptor link to file in directory using open() and set flag to read-only
     readFile = open(filename,O_RDONLY,00400 );
 
     if(readFile == -1)
@@ -156,26 +157,26 @@ int main(int argc, char **argv) {
 
     do
     {
-      memset(buffer, 0 , BUFSIZE);
-      readByte = read(readFile,buffer,BUFSIZE);
-
+      memset(buffer, 0 , BUFSIZE); //clear address memory
+      readByte = read(readFile,buffer,BUFSIZE); //read from file and save to address memory pointed by buffer
       printf("[SERVER]: Read %d bytes.", readByte);
+
       if (readByte < 0)
       {
         printf("[SERVER] Failed to read from file: %s\n", strerror(errno));
         exit(1);
       }
       
-      //call send() to echo back message receive from client @clientSocket
+      //call send() to send data read in buffer to client socket
       if ((sendByte = send(clientSocket, buffer, readByte,0)) == -1 )
       {
         printf("[SERVER] Failed to send message to client socket: %s", strerror(errno));
       }
       printf("[SERVER]: Sent %d bytes\n", sendByte);
 
-    } while (readByte != 0);
+    } while (readByte != 0); //stop after read() reaches eof - return 0
 
-    close(clientSocket);
+    close(clientSocket); //close connection to client after finish transfering
     
   }
   

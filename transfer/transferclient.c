@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
   char buffer[BUFSIZE];   //allocate BUFSIZE of 512 to buffer for recv()
   int serverSocket ; //serverSocket is socket descriptor for client to connet to 
   struct addrinfo hints, *servinfo, *p; //struct addrinfo to hold revelant information regarding socket address
-  int status, recvByte, totalByte = 0; //status is used to stored return getaddrinfo, recvByte store the number bytes receives
+  int status, recvByte; //status is used to stored return getaddrinfo, recvByte store the number bytes receives
   int writeFile,writeByte; //File descriptor for writing content from buffer
 
   sprintf(portNoChar, "%d", portno);
