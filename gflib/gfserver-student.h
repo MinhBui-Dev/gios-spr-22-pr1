@@ -7,4 +7,8 @@
 #include "gf-student.h"
 #include "gfserver.h"
 
+#define SCHEME "GETFILE"
+#define METHOD "GET"
+#define MARKER "\r\n\r\n"
+
 #endif // __GF_SERVER_STUDENT_H__
