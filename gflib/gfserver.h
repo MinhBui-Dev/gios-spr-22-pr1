@@ -29,18 +29,6 @@ typedef struct gfcontext_t gfcontext_t;
 gfserver_t *gfserver_create();
 
 /*
- * Sets the port at which the server will listen for connections.
- */
-void gfserver_set_port(gfserver_t **gfs, unsigned short port);
-
-/*
- * Sets the maximum number of pending connections which the server
- * will tolerate before rejecting connection requests.
- */
-void gfserver_set_maxpending(gfserver_t **gfs, int max_npending);
-
-
-/*
  * Sets the handler callback, a function that will be called for each each
  * request.  As arguments, this function receives:
  * - a gfcontext_t handle which it must pass into the gfs_* functions that 
@@ -50,6 +38,17 @@ void gfserver_set_maxpending(gfserver_t **gfs, int max_npending);
  * The handler should only return a negative value to signal an error.
  */
 void gfserver_set_handler(gfserver_t **gfs, gfh_error_t (*handler)(gfcontext_t **, const char *, void*));
+
+/*
+ * Sets the port at which the server will listen for connections.
+ */
+void gfserver_set_port(gfserver_t **gfs, unsigned short port);
+
+/*
+ * Sets the maximum number of pending connections which the server
+ * will tolerate before rejecting connection requests.
+ */
+void gfserver_set_maxpending(gfserver_t **gfs, int max_npending);
 
 /*
  * Sets the third argument for calls to the handler callback.
