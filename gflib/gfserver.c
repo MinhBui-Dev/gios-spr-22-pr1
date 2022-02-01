@@ -15,8 +15,8 @@ struct gfserver_t
 
 struct gfcontext_t
 {
-    int clientSocket;
-    struct sockaddr_storage clientAddr; //use to store incoming connection information
+    int clientSocket; //use to store incoming connection information
+    struct sockaddr_storage clientAddr; 
     socklen_t clientAddrSize; 
     int fileSize;
 };
@@ -115,38 +115,40 @@ void gfserver_serve(gfserver_t **gfs){
     
     freeaddrinfo(servinfo); //free up servinfo struct 
     
-    struct gfcontext_t *ctx = malloc(sizeof(struct gfcontext_t));
-    char message[MAX_REQUEST_LEN]; //char string to hold client message
-    char header[MAX_REQUEST_LEN]; //char string to hold header for validationi 
     
-    char Marker[] = "\r\n\r\n";
-
-    
-    memset(message, 0 , MAX_REQUEST_LEN);
-    memset(header, 0 , MAX_REQUEST_LEN);
+   
 
     while (1)
     {
+        char message[MAX_REQUEST_LEN]; //char string to hold client message
+        char header[MAX_REQUEST_LEN]; //char string to hold header for validationi   
+        memset(message, 0 , MAX_REQUEST_LEN);
+        memset(header, 0 , MAX_REQUEST_LEN);
+
+        struct gfcontext_t *ctx;
+        ctx = (gfcontext_t*)malloc(sizeof(struct gfcontext_t));
+        printf("Malloc for ctx.\n");
         ctx->clientAddrSize = sizeof(ctx->clientAddr);
         if ((ctx->clientSocket = accept(serverSocket,(struct sockaddr*)&(ctx->clientAddr),&(ctx->clientAddrSize)))== -1)
         {
             printf("[SERVER] accept() error: %s\n", strerror(errno));
         }
-        
+        printf("[SERVER] Accepted connection from client.\n");
         //call recvHeader 
+        memset(buffer,0,MAX_REQUEST_LEN);
         do
         {
             if ((recvByte = recv(ctx->clientSocket,buffer,MAX_REQUEST_LEN,0)) == -1)
             {
-            printf("[SERVER] Failed to receive from client socket: %s\n", strerror(errno));
+                printf("[SERVER] Failed to receive from client socket: %s\n", strerror(errno));
             }
             buffer[recvByte] = '\0';
             strcat(message,buffer);
 
-        } while (strstr(message,MARKER) == NULL);
+        } while (strstr(message,MARKER) == NULL);    
         
-        strncpy(header,message,strstr(message,Marker)-message);
-
+            
+        strncpy(header,message,strstr(message,MARKER)-message);
         printf("[SERVER] Received [CLIENT]'s header: %s\n",header);
 
         //Check Header
@@ -155,17 +157,15 @@ void gfserver_serve(gfserver_t **gfs){
         const char *path_c = strtok(NULL," ");
         if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0)
         {
-            printf("[SERVER] Header request is valid!\nSending [PATH] to handler now.\n");
+            printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
             gfs_handler(&ctx,path_c,NULL);
         }
-        else
-        {
-            printf("[SERVER] Invalid header request.\n");
-            //code sending message to client GF_INVALID
-        }
+            
+        gfs_abort(&ctx);
 
     }
     
+    free((void *)*gfs);
 
 }
 
@@ -189,6 +189,7 @@ ssize_t gfs_sendheader(gfcontext_t **ctx, gfstatus_t status, size_t file_len){
         strcat(responseHeader,MARKER); //<scheme> <status> <length>\r\n\r\n
         printf("[SERVER] Responder header is: %s",responseHeader);
         sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
+        printf("SERVER SENT %d Number of Byte",sendByte);
         return sendByte;
     case 400: //status = FILE_NOT_FOUND
         strcpy(responseHeader,SCHEME);
@@ -219,31 +220,25 @@ ssize_t gfs_sendheader(gfcontext_t **ctx, gfstatus_t status, size_t file_len){
  * @return ssize_t 
  */
 ssize_t gfs_send(gfcontext_t **ctx, const void *data, size_t len){
-    size_t totalSendBytes = 0;
+    //size_t totalSendBytes = 0;
     size_t sendBytes;
-    printf("Byte left to send %ld\n", len);
-    while (totalSendBytes <= (*ctx)->fileSize)
+    //size_t fileSize = (*ctx)->fileSize;
+
+    sendBytes = send((*ctx)->clientSocket,data,len,0);
+    if (sendBytes == -1)
     {
-        sendBytes = send((*ctx)->clientSocket,data,len,0);
-        if (sendBytes == -1)
-        {
-            printf("[SERVER] Failed to send data to client: %s\n", strerror(errno));
-            return -1;
-        }
-        printf("Byte sent: %ld\n", sendBytes);
-        totalSendBytes += sendBytes;
-        printf("Total Byte sent %ld\n", totalSendBytes);
+        printf("[SERVER] Failed to send data to client: %s\n", strerror(errno));
+        return -1;
     }
-    
-        
-
-    
-
-    
     return sendBytes;
 }
 
 void gfs_abort(gfcontext_t **ctx){
+    printf("[SERVER] Closing client socket now.\n");
+    close((*ctx)->clientSocket);
+    printf("[SERVER] Free malloc for ctx.\n");
+    free((void*)*ctx);
 
+    
 }
 
