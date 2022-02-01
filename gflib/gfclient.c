@@ -19,6 +19,12 @@ void gfc_cleanup(gfcrequest_t **gfr) {}
 
 gfcrequest_t *gfc_create() {
   // dummy for now - need to fill this part in
+  gfcrequest_t* gfr;
+    if ((gfr =  (gfcrequest_t*)malloc(sizeof(gfcrequest_t))) != NULL)
+    {
+        printf("[CLIENT] Successful allocate memory for gfs.\n");
+        return gfr;
+    }
 
   return (gfcrequest_t *)NULL;
 }
