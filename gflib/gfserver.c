@@ -26,7 +26,7 @@ gfserver_t* gfserver_create(){
     gfserver_t* gfs;
     if ((gfs =  (gfserver_t*)malloc(sizeof(gfserver_t))) != NULL)
     {
-        printf("[SERVER] Successful allocate memory for gfs.\n");
+        //printf("[SERVER] Successful allocate memory for gfs.\n");
         return gfs;
     }
     
@@ -112,7 +112,7 @@ void gfserver_serve(gfserver_t **gfs){
         printf("[SERVER] Failed to listen(): %s\n", strerror(errno));
         exit(1);
     }
-    
+    printf("[SERVER] Started and listening for incoming connection...\n");
     freeaddrinfo(servinfo); //free up servinfo struct 
     
     
@@ -124,18 +124,19 @@ void gfserver_serve(gfserver_t **gfs){
         char header[MAX_REQUEST_LEN]; //char string to hold header for validationi   
         memset(message, 0 , MAX_REQUEST_LEN);
         memset(header, 0 , MAX_REQUEST_LEN);
+        memset(buffer,0,MAX_REQUEST_LEN);
 
         struct gfcontext_t *ctx;
         ctx = (gfcontext_t*)malloc(sizeof(struct gfcontext_t));
-        printf("Malloc for ctx.\n");
         ctx->clientAddrSize = sizeof(ctx->clientAddr);
         if ((ctx->clientSocket = accept(serverSocket,(struct sockaddr*)&(ctx->clientAddr),&(ctx->clientAddrSize)))== -1)
         {
             printf("[SERVER] accept() error: %s\n", strerror(errno));
         }
-        printf("[SERVER] Accepted connection from client.\n");
+        printf("[SERVER] Accepted connection from client...\n");
+        
+        
         //call recvHeader 
-        memset(buffer,0,MAX_REQUEST_LEN);
         do
         {
             if ((recvByte = recv(ctx->clientSocket,buffer,MAX_REQUEST_LEN,0)) == -1)
@@ -149,7 +150,7 @@ void gfserver_serve(gfserver_t **gfs){
         
             
         strncpy(header,message,strstr(message,MARKER)-message);
-        printf("[SERVER] Received [CLIENT]'s header: %s\n",header);
+        printf("[SERVER] Received [CLIENT]'s header: %s%s\n",header,PRINTMARKER);
 
         //Check Header
         const char *scheme_c = strtok(header," ");
@@ -159,6 +160,10 @@ void gfserver_serve(gfserver_t **gfs){
         {
             printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
             gfs_handler(&ctx,path_c,NULL);
+        }
+        else
+        {
+            gfs_sendheader(&ctx,GF_INVALID,0);
         }
             
         gfs_abort(&ctx);
@@ -186,23 +191,31 @@ ssize_t gfs_sendheader(gfcontext_t **ctx, gfstatus_t status, size_t file_len){
         strcpy(responseHeader,SCHEME);
         strcat(responseHeader," OK ");
         strcat(responseHeader,lengthInChar);
+        printf("[SERVER] Response header sent: %s%s\n",responseHeader,PRINTMARKER);
         strcat(responseHeader,MARKER); //<scheme> <status> <length>\r\n\r\n
-        printf("[SERVER] Responder header is: %s",responseHeader);
+        
         sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
-        printf("SERVER SENT %d Number of Byte",sendByte);
+        //printf("SERVER SENT %d Number of Byte",sendByte);
         return sendByte;
     case 400: //status = FILE_NOT_FOUND
         strcpy(responseHeader,SCHEME);
         strcat(responseHeader," FILE_NOT_FOUND");
+        printf("[SERVER] Response header sent: %s%s\n",responseHeader,PRINTMARKER);
         strcat(responseHeader,MARKER); //<scheme> <status>\r\n\r\n
-        printf("[SERVER] Responder header is: %s",responseHeader);
         sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
         return sendByte;
     case 500: ; //status = ERROR
         strcpy(responseHeader,SCHEME);
         strcat(responseHeader," ERROR");
+        printf("[SERVER] Response header sent: %s%s\n",responseHeader,PRINTMARKER);
         strcat(responseHeader,MARKER); //<scheme> <status>\r\n\r\n
-        printf("[SERVER] Responder header is: %s",responseHeader);
+        sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
+        return sendByte;   
+    case 600: ; //status = INVALID
+        strcpy(responseHeader,SCHEME);
+        strcat(responseHeader," INVALID");
+        printf("[SERVER] Response header sent: %s%s\n",responseHeader,PRINTMARKER);
+        strcat(responseHeader,MARKER); //<scheme> <status>\r\n\r\n
         sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
         return sendByte;   
     }
@@ -220,10 +233,8 @@ ssize_t gfs_sendheader(gfcontext_t **ctx, gfstatus_t status, size_t file_len){
  * @return ssize_t 
  */
 ssize_t gfs_send(gfcontext_t **ctx, const void *data, size_t len){
-    //size_t totalSendBytes = 0;
+   
     size_t sendBytes;
-    //size_t fileSize = (*ctx)->fileSize;
-
     sendBytes = send((*ctx)->clientSocket,data,len,0);
     if (sendBytes == -1)
     {
@@ -233,11 +244,15 @@ ssize_t gfs_send(gfcontext_t **ctx, const void *data, size_t len){
     return sendBytes;
 }
 
+/**
+ * @brief de-allocate memory pointed by ctx
+ * 
+ * @param ctx 
+ */
 void gfs_abort(gfcontext_t **ctx){
-    printf("[SERVER] Closing client socket now.\n");
-    close((*ctx)->clientSocket);
-    printf("[SERVER] Free malloc for ctx.\n");
-    free((void*)*ctx);
+    printf("[SERVER] Disconnecting from client socket now...\n");
+    close((*ctx)->clientSocket); //close client socket
+    free((void*)*ctx); //cast cast ctx as void pointer and free it
 
     
 }
