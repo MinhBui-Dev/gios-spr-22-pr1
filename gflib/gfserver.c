@@ -159,7 +159,7 @@ void gfserver_serve(gfserver_t **gfs){
         if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0)
         {
             printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
-            gfs_handler(&ctx,path_c,NULL);
+            (*gfs)->handler(&ctx,path_c,(*gfs)->handlerarg);
         }
         else
         {
