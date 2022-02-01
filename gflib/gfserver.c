@@ -18,6 +18,7 @@ struct gfcontext_t
     int clientSocket;
     struct sockaddr_storage clientAddr; //use to store incoming connection information
     socklen_t clientAddrSize; 
+    int fileSize;
 };
 
 gfserver_t* gfserver_create(){
@@ -174,49 +175,72 @@ ssize_t gfs_sendheader(gfcontext_t **ctx, gfstatus_t status, size_t file_len){
     int sendByte;
     char responseHeader[MAX_REQUEST_LEN];
     memset(responseHeader,0,MAX_REQUEST_LEN);
-
+    (*ctx)->fileSize = file_len;
+    //Logic for sending response header base on return value of status
     switch (status)
     {
-    case 200: ;
+    case 200: ; //status = OK
         char lengthInChar[20];
         memset(lengthInChar,0,20);
-        sprintf(lengthInChar,"%ld",file_len);
+        sprintf(lengthInChar,"%ld",file_len); //changing length from int to string
         strcpy(responseHeader,SCHEME);
-        strcat(responseHeader," ");
-        strcat(responseHeader,"OK");
-        strcat(responseHeader," ");
+        strcat(responseHeader," OK ");
         strcat(responseHeader,lengthInChar);
-        strcat(responseHeader,MARKER);
+        strcat(responseHeader,MARKER); //<scheme> <status> <length>\r\n\r\n
         printf("[SERVER] Responder header is: %s",responseHeader);
-        sendByte = send((*ctx)->clientSocket, responseHeader, MAX_REQUEST_LEN,0);
+        sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
         return sendByte;
-        break;
-    case 400:
+    case 400: //status = FILE_NOT_FOUND
         strcpy(responseHeader,SCHEME);
-        strcat(responseHeader," ");
-        strcat(responseHeader,"FILE_NOT_FOUND");
-        strcat(responseHeader,MARKER);
+        strcat(responseHeader," FILE_NOT_FOUND");
+        strcat(responseHeader,MARKER); //<scheme> <status>\r\n\r\n
         printf("[SERVER] Responder header is: %s",responseHeader);
-        sendByte = send((*ctx)->clientSocket, responseHeader, MAX_REQUEST_LEN,0);
+        sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
         return sendByte;
-        break;
-    case 500: ;
+    case 500: ; //status = ERROR
         strcpy(responseHeader,SCHEME);
-        strcat(responseHeader," ");
-        strcat(responseHeader,"OK");
-        strcat(responseHeader,MARKER);
+        strcat(responseHeader," ERROR");
+        strcat(responseHeader,MARKER); //<scheme> <status>\r\n\r\n
         printf("[SERVER] Responder header is: %s",responseHeader);
-        sendByte = send((*ctx)->clientSocket, responseHeader, MAX_REQUEST_LEN,0);
-        return sendByte;
-        break;    
+        sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
+        return sendByte;   
     }
      
     return -1;
 }
 
+/**
+ * @brief gfs_send functions is to be called from within a callback 
+ * registered with gfserver_set_handler function
+ * 
+ * @param ctx client socketfd for server to send data to
+ * @param data content to be sent to client 
+ * @param len length of content
+ * @return ssize_t 
+ */
 ssize_t gfs_send(gfcontext_t **ctx, const void *data, size_t len){
-    // not yet implemented
-    return -1;
+    size_t totalSendBytes = 0;
+    size_t sendBytes;
+    printf("Byte left to send %ld\n", len);
+    while (totalSendBytes <= (*ctx)->fileSize)
+    {
+        sendBytes = send((*ctx)->clientSocket,data,len,0);
+        if (sendBytes == -1)
+        {
+            printf("[SERVER] Failed to send data to client: %s\n", strerror(errno));
+            return -1;
+        }
+        printf("Byte sent: %ld\n", sendBytes);
+        totalSendBytes += sendBytes;
+        printf("Total Byte sent %ld\n", totalSendBytes);
+    }
+    
+        
+
+    
+
+    
+    return sendBytes;
 }
 
 void gfs_abort(gfcontext_t **ctx){
