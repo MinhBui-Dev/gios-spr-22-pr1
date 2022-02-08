@@ -7,8 +7,7 @@
  #include "gfclient.h"
  #include "gf-student.h"
  
- const int true = 1;
- const int false = 0;
+ 
  #define SCHEMESIZE 8
  #define STATUSMAXSIZE 15
  
