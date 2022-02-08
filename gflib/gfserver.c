@@ -143,11 +143,11 @@ void gfserver_serve(gfserver_t **gfs){
         //call recvHeader 
         do
         {
-            if ((recvByte = recv(ctx->clientSocket,buffer,MAX_REQUEST_LEN,0)) == -1)
+            if ((recvByte = recv(ctx->clientSocket,buffer,MAX_REQUEST_LEN-1,0)) == -1)
             {
                 printf("[SERVER] Failed to receive from client socket: %s\n", strerror(errno));
             }
-            buffer[recvByte] = '\0';
+            buffer[recvByte] = '\0'; //In case client request header in chunk
             strcat(message,buffer);
 
         } while (strstr(message,MARKER) == NULL);    

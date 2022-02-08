@@ -16,4 +16,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#define SCHEME "GETFILE"
+#define METHOD "GET"
+#define MARKER "\r\n\r\n"
+#define MAXBUFFER 4000
+
  #endif // __GF_STUDENT_H__
