@@ -19,6 +19,7 @@ struct gfcontext_t
     struct sockaddr_storage clientAddr; 
     socklen_t clientAddrSize; 
     int fileSize;
+    const char *path;
 };
 
 gfserver_t* gfserver_create(){
@@ -159,11 +160,11 @@ void gfserver_serve(gfserver_t **gfs){
         //Check Header
         const char *scheme_c = strtok(header," ");
         const char *method_c = strtok(NULL," ");
-        const char *path_c = strtok(NULL," ");
-        if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(path_c,"/",1) == 0)
+        ctx->path = strtok(NULL," ");
+        if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(ctx->path,"/",1) == 0)
         {
             printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
-            (*gfs)->handler(&ctx,path_c,(*gfs)->handlerarg);
+            (*gfs)->handler(&ctx,ctx->path,(*gfs)->handlerarg);
         }
         else
         {
