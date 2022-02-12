@@ -29,11 +29,11 @@ gfh_error_t gfs_handler(gfcontext_t **ctx, const char *path, void* arg){
 	if (*ctx == NULL)
 	{
 		return gfh_failure;
-	}
+	}	
 	request->ctx = *ctx;
 	request->path = path;
 	pthread_mutex_lock(&mutex);
-	steque_enqueue(requestQueue,&request);
+	steque_enqueue(requestQueue,request);
 	pthread_mutex_unlock(&mutex);
 	pthread_cond_signal(&work_cond);
 	*ctx = NULL;
