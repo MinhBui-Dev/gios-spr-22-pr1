@@ -32,7 +32,6 @@ extern unsigned long int content_delay;
 
 extern gfh_error_t gfs_handler(gfcontext_t **ctx, const char *path, void *arg);
 
-
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 pthread_cond_t work_cond = PTHREAD_COND_INITIALIZER;
@@ -105,7 +104,7 @@ int main(int argc, char **argv) {
 
   content_init(content_map);
 
-  requestQueue = (steque_t*)malloc(sizeof(steque_t));
+  requestQueue = malloc(sizeof(steque_t));
   steque_init(requestQueue);
 
   /* Initialize thread management */
@@ -146,6 +145,8 @@ void *gfs_transfer(void *arg)
 		}
 		request = steque_pop(requestQueue);
 
+    pthread_mutex_unlock(&mutex);
+
 		int fileD;
 
 		fileD = content_get(request->path);
@@ -168,19 +169,20 @@ void *gfs_transfer(void *arg)
     char buffer[BUFFERSIZE];
 
     totalRead = 0;
-    totalSend = 0;
-
-    while (totalSend > fileLen)
+    
+    while (totalRead < fileLen)
     {
-      memset(buffer,0,BUFFERSIZE);
+      //memset(buffer,0,BUFFERSIZE);
       readByte = pread(fileD,buffer,BUFFERSIZE,totalRead);
+
+      
       if (readByte < 0)
       {
         printf("[SERVER] Failed to read from file: %s\n", strerror(errno));
         exit(1);
       }
-
-      while (totalSend > readByte)
+      totalSend = 0;
+      while (totalSend < readByte)
       {
         SendByte = gfs_send(&(request->ctx),buffer,BUFFERSIZE);
         totalSend += SendByte;
@@ -189,9 +191,8 @@ void *gfs_transfer(void *arg)
       totalRead += readByte;
       
     }
-    
+    printf("total send byte %d and file length %d\n",totalRead,fileLen);
     free(request);
-    exit(1);
 	}
 }
 
