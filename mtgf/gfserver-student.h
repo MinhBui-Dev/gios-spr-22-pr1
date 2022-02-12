@@ -12,4 +12,11 @@
 void init_threads(size_t numthreads);
 void cleanup_threads();
 
+typedef struct file_request{
+    gfcontext_t *ctx;
+    const char *path;
+} file_request;
+
+#define BUFFERSIZE 4000
+
 #endif // __GF_SERVER_STUDENT_H__

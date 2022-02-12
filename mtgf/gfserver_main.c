@@ -1,5 +1,10 @@
 
 #include <stdlib.h>
+#include <pthread.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include "steque.h"
 
 #include "gfserver-student.h"
 
@@ -26,6 +31,15 @@ static struct option gLongOptions[] = {
 extern unsigned long int content_delay;
 
 extern gfh_error_t gfs_handler(gfcontext_t **ctx, const char *path, void *arg);
+
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
+pthread_cond_t work_cond = PTHREAD_COND_INITIALIZER;
+
+steque_t *requestQueue;
+
+void *gfs_transfer(void *arg);
 
 static void _sig_handler(int signo) {
   if ((SIGINT == signo) || (SIGTERM == signo)) {
@@ -91,8 +105,21 @@ int main(int argc, char **argv) {
 
   content_init(content_map);
 
-  /* Initialize thread management */
+  requestQueue = (steque_t*)malloc(sizeof(steque_t));
+  steque_init(requestQueue);
 
+  /* Initialize thread management */
+  pthread_t workerThread[nthreads];
+
+  for (int i = 0; i < nthreads; i++)
+  {
+    if (pthread_create(&workerThread[i],NULL,gfs_transfer,NULL) != 0)
+    {
+      printf("Unable to create worker thread %d",i);
+    }
+    
+  }
+  
   /*Initializing server*/
   gfs = gfserver_create();
 
@@ -105,3 +132,66 @@ int main(int argc, char **argv) {
   /*Loops forever*/
   gfserver_serve(&gfs);
 }
+
+void *gfs_transfer(void *arg)
+{
+	while (1)
+	{
+		file_request *request;
+		pthread_mutex_lock(&mutex);
+
+		while(steque_isempty(requestQueue))
+		{
+			pthread_cond_wait(&work_cond,&mutex);
+		}
+		request = steque_pop(requestQueue);
+
+		int fileD;
+
+		fileD = content_get(request->path);
+
+		if (fileD == -1)
+		{
+			gfs_sendheader(&(request->ctx),GF_FILE_NOT_FOUND,0);
+			exit(1);
+		}
+
+		struct stat fileStat;
+    int fileLen;
+    
+    fstat(fileD,&fileStat);
+    fileLen = fileStat.st_size;
+
+    gfs_sendheader(&(request->ctx),GF_OK,fileLen);
+
+    int readByte, SendByte, totalRead, totalSend;
+    char buffer[BUFFERSIZE];
+
+    totalRead = 0;
+    totalSend = 0;
+
+    while (totalSend > fileLen)
+    {
+      memset(buffer,0,BUFFERSIZE);
+      readByte = pread(fileD,buffer,BUFFERSIZE,totalRead);
+      if (readByte < 0)
+      {
+        printf("[SERVER] Failed to read from file: %s\n", strerror(errno));
+        exit(1);
+      }
+
+      while (totalSend > readByte)
+      {
+        SendByte = gfs_send(&(request->ctx),buffer,BUFFERSIZE);
+        totalSend += SendByte;
+      }
+
+      totalRead += readByte;
+      
+    }
+    
+    free(request);
+    exit(1);
+	}
+}
+
