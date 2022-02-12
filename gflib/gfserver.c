@@ -248,11 +248,6 @@ ssize_t gfs_send(gfcontext_t **ctx, const void *data, size_t len){
     return sendBytes;
 }
 
-/**
- * @brief de-allocate memory pointed by ctx
- * 
- * @param ctx 
- */
 void gfs_abort(gfcontext_t **ctx){
     close((*ctx)->clientSocket);
     free((void*)*ctx); //cast cast ctx as void pointer and free it
