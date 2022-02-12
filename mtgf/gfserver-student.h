@@ -17,6 +17,6 @@ typedef struct file_request{
     const char *path;
 } file_request;
 
-#define BUFFERSIZE 4000
+#define BUFFERSIZE 8000
 
 #endif // __GF_SERVER_STUDENT_H__
