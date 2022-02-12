@@ -15,5 +15,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <pthread.h>
+#include "steque.h"
 
  #endif // __GF_STUDENT_H__
