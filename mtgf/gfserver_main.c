@@ -130,6 +130,7 @@ int main(int argc, char **argv) {
 
   /*Loops forever*/
   gfserver_serve(&gfs);
+  free(requestQueue);
 }
 
 void *gfs_transfer(void *arg)
@@ -193,6 +194,7 @@ void *gfs_transfer(void *arg)
     }
     printf("total send byte %d and file length %d\n",totalRead,fileLen);
     free(request);
+    pthread_exit(NULL);
 	}
 }
 

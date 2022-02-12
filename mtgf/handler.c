@@ -21,7 +21,7 @@ extern steque_t *requestQueue;
 //
 gfh_error_t gfs_handler(gfcontext_t **ctx, const char *path, void* arg){
 	file_request *request;
-	if ((file_request*)malloc(sizeof(file_request)) == NULL)
+	if ((request=(file_request*)malloc(sizeof(file_request))) == NULL)
 	{
 		printf("Failed to allocate memory for job request");
 		return gfh_failure;
