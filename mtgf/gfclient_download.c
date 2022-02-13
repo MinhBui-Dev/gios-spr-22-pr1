@@ -31,6 +31,8 @@ char *server = "localhost";
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t work_cond = PTHREAD_COND_INITIALIZER;
 steque_t *requestQueue;
+int nrequests;
+char *requestDone = "No More Request";
 
 static void Usage() { fprintf(stderr, "%s", USAGE); }
 
@@ -83,7 +85,7 @@ int main(int argc, char **argv) {
   
   char *workload_path = "workload.txt";
   int option_char = 0;
-  int nrequests = 5;
+  nrequests = 5;
   int nthreads = 12;
   char *req_path = NULL;
   int i = 0;
@@ -141,14 +143,16 @@ int main(int argc, char **argv) {
   requestQueue = malloc(sizeof(steque_t));
 
   steque_init(requestQueue);
-
+  int threadID[nthreads];
   // add your threadpool creation here 
-  for ( tID = 0; tID < nthreads; tID++)
+  for ( i = 0; i < nthreads; i++)
   {
-    if (pthread_create(&workerThreads[tID],NULL,gfc_request,NULL) != 0)
+    threadID[i] = i;
+    if (pthread_create(&workerThreads[i],NULL,gfc_request,&threadID[i]) != 0)
     {
-      printf("Unable to create worker thread %d",i);
+      printf("Unable to create worker thread %d",threadID[i]);
     }
+    printf("Creating thread ID#%d\n", threadID[i]);
   }
   
   /* Build your queue of requests here */
@@ -167,6 +171,14 @@ int main(int argc, char **argv) {
     pthread_cond_signal(&work_cond);
   }
 
+  //adding poison pill
+  
+  req_path = requestDone;
+  pthread_mutex_lock(&mutex);
+  steque_enqueue(requestQueue,req_path);
+  pthread_mutex_unlock(&mutex);
+  pthread_cond_signal(&work_cond);
+
   for ( tID = 0; tID < nthreads; tID++)
   {
     if (pthread_join(workerThreads[tID],NULL) != 0)
@@ -177,7 +189,9 @@ int main(int argc, char **argv) {
 
   gfc_global_cleanup();  /* use for any global cleanup for AFTER your thread
                           pool has terminated. */
-
+  pthread_mutex_destroy(&mutex);
+  pthread_cond_destroy(&work_cond);
+  free(requestQueue);
   return 0;
 }
 
@@ -188,49 +202,65 @@ void *gfc_request(void *arg)
   gfcrequest_t *gfr = NULL;
   FILE *file = NULL;
   char *req_path = NULL;
-  
-  pthread_mutex_lock(&mutex);
-  while (steque_isempty(requestQueue))
+  for (int i = 0; i < nrequests; i++)
   {
-    pthread_cond_wait(&work_cond,&mutex);
+    pthread_mutex_lock(&mutex);
+    while (steque_isempty(requestQueue))
+    {
+      pthread_cond_wait(&work_cond,&mutex);
+    }
+    req_path = steque_pop(requestQueue);
+    if (strcmp(req_path,requestDone) == 0)
+    {
+      steque_enqueue(requestQueue, req_path);
+      pthread_mutex_unlock(&mutex);
+      pthread_cond_signal(&work_cond);
+      printf("Thread ID# %d exiting\n", *(int*)arg);
+      pthread_exit(NULL);
+    }
+    
+    else
+    {
+      pthread_mutex_unlock(&mutex);
+
+      printf("thread ID# %d is working\n", *(int*)arg);
+    
+
+      localPath(req_path, local_path);
+
+      file = openFile(local_path);
+
+      gfr = gfc_create();
+      gfc_set_server(&gfr, server);
+      gfc_set_path(&gfr, req_path);
+      gfc_set_port(&gfr, port);
+      gfc_set_writefunc(&gfr, writecb);
+      gfc_set_writearg(&gfr, file);
+
+      fprintf(stdout, "Requesting %s%s\n", server, req_path);
+
+      if (0 > (returncode = gfc_perform(&gfr))) {
+        fprintf(stdout, "gfc_perform returned an error %d\n", returncode);
+        fclose(file);
+        if (0 > unlink(local_path))
+          fprintf(stderr, "warning: unlink failed on %s\n", local_path);
+      } else {
+        fclose(file);
+      }
+
+      if (gfc_get_status(&gfr) != GF_OK) 
+      {
+        if (0 > unlink(local_path))
+          fprintf(stderr, "warning: unlink failed on %s\n", local_path);
+      }
+
+      fprintf(stdout, "Status: %s\n", gfc_strstatus(gfc_get_status(&gfr)));
+      fprintf(stdout, "Received %zu of %zu bytes\n", gfc_get_bytesreceived(&gfr),
+              gfc_get_filelen(&gfr));
+
+      gfc_cleanup(&gfr);
+
+    }
   }
-  req_path = steque_pop(requestQueue);
-  pthread_mutex_unlock(&mutex);
-  
-
-  localPath(req_path, local_path);
-
-  file = openFile(local_path);
-
-  gfr = gfc_create();
-  gfc_set_server(&gfr, server);
-  gfc_set_path(&gfr, req_path);
-  gfc_set_port(&gfr, port);
-  gfc_set_writefunc(&gfr, writecb);
-  gfc_set_writearg(&gfr, file);
-
-  fprintf(stdout, "Requesting %s%s\n", server, req_path);
-
-  if (0 > (returncode = gfc_perform(&gfr))) {
-    fprintf(stdout, "gfc_perform returned an error %d\n", returncode);
-    fclose(file);
-    if (0 > unlink(local_path))
-      fprintf(stderr, "warning: unlink failed on %s\n", local_path);
-  } else {
-    fclose(file);
-  }
-
-  if (gfc_get_status(&gfr) != GF_OK) 
-  {
-    if (0 > unlink(local_path))
-      fprintf(stderr, "warning: unlink failed on %s\n", local_path);
-  }
-
-  fprintf(stdout, "Status: %s\n", gfc_strstatus(gfc_get_status(&gfr)));
-  fprintf(stdout, "Received %zu of %zu bytes\n", gfc_get_bytesreceived(&gfr),
-          gfc_get_filelen(&gfr));
-
-  gfc_cleanup(&gfr);
-
-  return NULL;
+  return 0;
 }
