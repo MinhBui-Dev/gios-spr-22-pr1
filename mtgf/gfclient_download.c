@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
   char *workload_path = "workload.txt";
   int option_char = 0;
   nrequests = 5;
-  int nthreads = 12;
+  int nthreads = 7;
   char *req_path = NULL;
   int i = 0;
   int tID;
@@ -191,7 +191,19 @@ int main(int argc, char **argv) {
                           pool has terminated. */
   pthread_mutex_destroy(&mutex);
   pthread_cond_destroy(&work_cond);
-  free(requestQueue);
+
+  //destroy the poison pill from the queue
+  if (steque_isempty(requestQueue) == 0)
+  {
+    printf("Emptying Queue\n");
+    steque_destroy(requestQueue);
+  }
+  if (steque_isempty(requestQueue) == 1)
+  {
+    printf("Free resource and Exiting...\n");
+    free(requestQueue);
+  }
+  
   return 0;
 }
 
@@ -223,7 +235,7 @@ void *gfc_request(void *arg)
     {
       pthread_mutex_unlock(&mutex);
 
-      printf("thread ID# %d is working\n", *(int*)arg);
+      //printf("thread ID# %d is working\n", *(int*)arg);
     
 
       localPath(req_path, local_path);

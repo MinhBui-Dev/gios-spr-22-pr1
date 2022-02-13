@@ -130,7 +130,12 @@ int main(int argc, char **argv) {
 
   /*Loops forever*/
   gfserver_serve(&gfs);
+  
   free(requestQueue);
+  content_destroy();
+  pthread_mutex_destroy(&mutex);
+  pthread_cond_destroy(&work_cond);
+
 }
 
 void *gfs_transfer(void *arg)
