@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
   
   char *workload_path = "workload.txt";
   int option_char = 0;
-  nrequests = 5;
+  nrequests = 7;
   int nthreads = 7;
   char *req_path = NULL;
   int i = 0;

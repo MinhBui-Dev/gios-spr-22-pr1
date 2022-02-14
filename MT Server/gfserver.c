@@ -159,12 +159,14 @@ void gfserver_serve(gfserver_t **gfs){
         //Check Header
         const char *scheme_c = strtok(header," ");
         const char *method_c = strtok(NULL," ");
-        const char *path_c = strtok(NULL," ");
+        char *path_c = strtok(NULL," ");
+        char *path = malloc((strlen(path_c)+1)*sizeof(char));
+        strcpy(path,path_c);
         
-        if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(path_c,"/",1) == 0)
+        if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(path,"/",1) == 0)
         {
             //printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
-            (*gfs)->handler(&ctx,path_c,(*gfs)->handlerarg);
+            (*gfs)->handler(&ctx,path,(*gfs)->handlerarg);
         }
         else
         {
@@ -173,6 +175,7 @@ void gfserver_serve(gfserver_t **gfs){
         }
             
         free(ctx);
+        //free(path);
 
     }
     
