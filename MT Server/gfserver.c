@@ -59,7 +59,6 @@ void gfserver_serve(gfserver_t **gfs){
     int status, recvByte/*, sendByte*/; //to store return from send()/recv()
     int yes = 1; //set option value for setsockopt 
 
-
     sprintf(portNoChar,"%d",(*gfs)->port); //convert port number from int to string
 
     memset(&hints,0, sizeof hints); //make sure hints is emptty
@@ -159,9 +158,11 @@ void gfserver_serve(gfserver_t **gfs){
         //Check Header
         const char *scheme_c = strtok(header," ");
         const char *method_c = strtok(NULL," ");
-        char *path_c = strtok(NULL," ");
-        char *path = malloc((strlen(path_c)+1)*sizeof(char));
+        const char *path_c = strtok(NULL,"\r");
+        char path[strlen(path_c)+1];
+        memset(path,0,strlen(path_c)+1);
         strcpy(path,path_c);
+        path[strlen(path_c)] = '\0';
         
         if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(path,"/",1) == 0)
         {
@@ -175,7 +176,7 @@ void gfserver_serve(gfserver_t **gfs){
         }
             
         free(ctx);
-        //free(path);
+        
 
     }
     

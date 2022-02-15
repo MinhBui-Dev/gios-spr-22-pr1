@@ -31,11 +31,11 @@ gfh_error_t gfs_handler(gfcontext_t **ctx, const char *path, void* arg){
 		return gfh_failure;
 	}	
 	request->ctx = *ctx;
-	request->path = path;
-	//printf("Inside Handler Path %s\n",request->path);
+	(request->path) = path;
+	printf("Inside Handler Path %s\n",request->path);
 	pthread_mutex_lock(&mutex);
 	steque_enqueue(requestQueue,request);
-	printf("Queue Size is %d\n",steque_size(requestQueue));
+	//printf("Queue Size is %d\n",steque_size(requestQueue));
 	pthread_mutex_unlock(&mutex);
 	pthread_cond_signal(&work_cond);
 	*ctx = NULL;

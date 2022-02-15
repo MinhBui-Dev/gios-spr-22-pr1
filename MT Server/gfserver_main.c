@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
     {
       printf("Unable to create worker thread %d",i);
     }
-    printf("Creating thread #%d\n", threadID[i]);
+    //printf("Creating thread #%d\n", threadID[i]);
     
   }
   
@@ -133,12 +133,7 @@ int main(int argc, char **argv) {
 
   /*Loops forever*/
   gfserver_serve(&gfs);
-  /*
-  free(requestQueue);
-  content_destroy();
-  pthread_mutex_destroy(&mutex);
-  pthread_cond_destroy(&work_cond);
-  */
+  
 }
 
 void *gfs_transfer(void *arg)
@@ -155,7 +150,7 @@ void *gfs_transfer(void *arg)
 		request = steque_pop(requestQueue);
 
     pthread_mutex_unlock(&mutex);
-    printf("Thread #%d working \n",*(int*)arg);
+    //printf("Thread #%d working \n",*(int*)arg);
 		int fileD;
 
     printf("Request path is %s\n", (request->path));
@@ -164,6 +159,7 @@ void *gfs_transfer(void *arg)
 		if (fileD == -1)
 		{
 			gfs_sendheader(&(request->ctx),GF_FILE_NOT_FOUND,0);
+
 		}
     else
     {
@@ -179,36 +175,46 @@ void *gfs_transfer(void *arg)
       char buffer[BUFFERSIZE];
 
       totalRead = 0;
-      
       while (totalRead < fileLen)
       {
-        //memset(buffer,0,BUFFERSIZE);
+        
+        memset(buffer,0,BUFFERSIZE);
         readByte = pread(fileD,buffer,BUFFERSIZE,totalRead);
 
         
         if (readByte < 0)
         {
           printf("[SERVER] Failed to read from file: %s\n", strerror(errno));
-          exit(1);
+          gfs_sendheader(&(request->ctx),GF_ERROR,0); //sending GF_ERROR to client due to file can't be read
+          break;
         }
-        totalSend = 0;
-        while (totalSend < readByte)
-        {
-          SendByte = gfs_send(&(request->ctx),buffer,BUFFERSIZE);
-          totalSend += SendByte;
-        }
-
-        totalRead += readByte;
         
+        if (readByte < BUFFERSIZE)
+        {
+          totalSend = 0;
+          while (totalSend < readByte)
+          {
+            SendByte = gfs_send(&(request->ctx),buffer,readByte);
+            totalSend += SendByte;
+          }
+        }
+        else
+        { 
+          totalSend = 0;
+          while (totalSend < readByte)
+          {
+            SendByte = gfs_send(&(request->ctx),buffer,BUFFERSIZE);
+            totalSend += SendByte;
+          }
+        }
+        
+        totalRead += readByte;
       }
-      printf("total send byte %d and file length %d\n",totalRead,fileLen);
-      free((request->ctx));
-      free((request->path));
-      free(request);
+      //printf("total send byte %d and file length %d\n",totalRead,fileLen);
+      
     }
-
-		
-
+    free((request->ctx));
+    free(request);
 	}
 }
 

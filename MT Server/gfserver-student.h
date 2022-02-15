@@ -14,7 +14,7 @@ void cleanup_threads();
 
 typedef struct file_request{
     gfcontext_t *ctx;
-    char *path;
+    const char *path;
 } file_request;
 
 #define BUFFERSIZE 8000

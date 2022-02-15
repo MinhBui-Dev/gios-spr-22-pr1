@@ -152,7 +152,7 @@ int main(int argc, char **argv) {
     {
       printf("Unable to create worker thread %d",threadID[i]);
     }
-    printf("Creating thread ID#%d\n", threadID[i]);
+    //printf("Creating thread ID#%d\n", threadID[i]);
   }
   
   /* Build your queue of requests here */
@@ -189,13 +189,13 @@ int main(int argc, char **argv) {
 
   gfc_global_cleanup();  /* use for any global cleanup for AFTER your thread
                           pool has terminated. */
-  pthread_mutex_destroy(&mutex);
+  pthread_mutex_destroy(&mutex); 
   pthread_cond_destroy(&work_cond);
 
   //destroy the poison pill from the queue
   if (steque_isempty(requestQueue) == 0)
   {
-    printf("Emptying Queue\n");
+   // printf("Emptying Queue\n");
     steque_destroy(requestQueue);
   }
   if (steque_isempty(requestQueue) == 1)
@@ -222,12 +222,12 @@ void *gfc_request(void *arg)
       pthread_cond_wait(&work_cond,&mutex);
     }
     req_path = steque_pop(requestQueue);
-    if (strcmp(req_path,requestDone) == 0)
+    if (strcmp(req_path,requestDone) == 0) //poison pill 
     {
       steque_enqueue(requestQueue, req_path);
       pthread_mutex_unlock(&mutex);
       pthread_cond_signal(&work_cond);
-      printf("Thread ID# %d exiting\n", *(int*)arg);
+      //printf("Thread ID# %d exiting\n", *(int*)arg);
       pthread_exit(NULL);
     }
     
