@@ -124,8 +124,9 @@ int gfc_perform(gfcrequest_t **gfr) {
   //send request header
   int reqHeaderLen = strlen(SCHEME) + strlen(METHOD) + strlen((*gfr)->path) + strlen(MARKER) + 3;//2 spaces and null-terminator
   char *reqHeader = malloc(sizeof(char)*reqHeaderLen);
+  memset(reqHeader,0,reqHeaderLen);
   sprintf(reqHeader,"%s %s %s%s",SCHEME,METHOD,(*gfr)->path,MARKER);
-  //printf("[CLIENT] Sending request header to server: %s",reqHeader);
+  printf("[CLIENT] Sending request header to server: %s",reqHeader);
   unsigned short totalSend = 0;
   do
   {
@@ -181,7 +182,7 @@ int gfc_perform(gfcrequest_t **gfr) {
 
   //printf("[CLIENT] Header found: %s & header size %d", resHeader, resHeaderSize);
   
- /* if ((*gfr)->headerfunc != NULL)
+  /*if ((*gfr)->headerfunc != NULL)
   {
     (*gfr)->headerfunc(resHeader,strlen(resHeader),NULL);
   }

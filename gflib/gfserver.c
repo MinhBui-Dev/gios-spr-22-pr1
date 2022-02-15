@@ -59,7 +59,6 @@ void gfserver_serve(gfserver_t **gfs){
     int status, recvByte/*, sendByte*/; //to store return from send()/recv()
     int yes = 1; //set option value for setsockopt 
 
-
     sprintf(portNoChar,"%d",(*gfs)->port); //convert port number from int to string
 
     memset(&hints,0, sizeof hints); //make sure hints is emptty
@@ -159,11 +158,16 @@ void gfserver_serve(gfserver_t **gfs){
         //Check Header
         const char *scheme_c = strtok(header," ");
         const char *method_c = strtok(NULL," ");
-        const char *path_c = strtok(NULL," ");
-        if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(path_c,"/",1) == 0)
+        const char *path_c = strtok(NULL,"\r");
+        char path[strlen(path_c)+1];
+        memset(path,0,strlen(path_c)+1);
+        strcpy(path,path_c);
+        path[strlen(path_c)] = '\0';
+        
+        if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(path,"/",1) == 0)
         {
-            printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
-            (*gfs)->handler(&ctx,path_c,(*gfs)->handlerarg);
+            //printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
+            (*gfs)->handler(&ctx,path,(*gfs)->handlerarg);
         }
         else
         {
@@ -172,6 +176,7 @@ void gfserver_serve(gfserver_t **gfs){
         }
             
         free(ctx);
+        
 
     }
     
