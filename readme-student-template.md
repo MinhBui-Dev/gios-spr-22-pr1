@@ -37,3 +37,22 @@ something that is easily actioned.  Examples of this include:
   this confusing" - we want you to tell us what you would have said _instead_.
 
 While we do award extra credit, we do so sparingly.
+
+Warm-up 1: Echo Client/Server
+
+Resource: 
+https://beej.us/guide/bgnet/html/ 
+https://man7.org/linux/man-pages/index.html
+
+Warm-up 2: Transfer Client/Server
+
+Code for socket connection has been copy from warmup 1 for both client and server file. 
+Open, Read, Write system calls: https://www.geeksforgeeks.org/input-output-system-calls-c-create-open-close-read-write/
+https://man7.org/linux/man-pages/index.html
+
+Code for part 1:
+strcpy/strcat https://stackoverflow.com/questions/308695/how-do-i-concatenate-const-literal-strings-in-c
+
+
+
+Code for part 2:
