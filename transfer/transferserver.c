@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
   int serverSocket, clientSocket; //serverSocket to listen() for incoming connection
                                   //clientSocket to send() to client
   struct addrinfo hints, *servinfo,*p; //struc addrinfo to hold address info
-  int status, sendByte; //to store return from send()
+  int status, sendByte, totalSend, byteLeft; //to store return from send()
   int yes = 1; //set option value for setsockopt 
   struct sockaddr_storage clientAddr; //use to store incoming connection information
   socklen_t clientAddrSize; 
@@ -168,11 +168,18 @@ int main(int argc, char **argv) {
       }
       
       //call send() to send data read in buffer to client socket
-      if ((sendByte = send(clientSocket, buffer, readByte,0)) == -1 )
+      totalSend = 0;
+      byteLeft = readByte;
+      while (totalSend < readByte)
       {
-        printf("[SERVER] Failed to send message to client socket: %s", strerror(errno));
-      }
-      printf("[SERVER]: Sent %d bytes\n", sendByte);
+        if ((sendByte = send(clientSocket, buffer+totalSend, byteLeft,0)) == -1 )
+        {
+          printf("[SERVER] Failed to send message to client socket: %s", strerror(errno));
+        }
+        printf("[SERVER]: Sent %d bytes\n", sendByte);
+        totalSend += sendByte;
+        byteLeft -= sendByte;
+      }     
 
     } while (readByte != 0); //stop after read() reaches eof - return 0
 

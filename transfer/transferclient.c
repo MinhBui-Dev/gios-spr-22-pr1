@@ -135,7 +135,7 @@ int main(int argc, char **argv) {
       printf("[CLIENT] Failed to receive: %s\n", strerror(errno));
       exit(1);
     }
-
+    
     //buffer[recvByte] = '\0';
 
     writeByte = write(writeFile,buffer,recvByte);
