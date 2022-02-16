@@ -244,13 +244,21 @@ ssize_t gfs_sendheader(gfcontext_t **ctx, gfstatus_t status, size_t file_len){
 ssize_t gfs_send(gfcontext_t **ctx, const void *data, size_t len){
    
     size_t sendBytes;
-    sendBytes = send((*ctx)->clientSocket,data,len,0);
-    if (sendBytes == -1)
+    int totalSend = 0;
+    int byteLeft = len;
+    while (totalSend < len)
     {
-        printf("[SERVER] Failed to send data to client: %s\n", strerror(errno));
-        return -1;
+        sendBytes = send((*ctx)->clientSocket,data+ totalSend,byteLeft,0);
+        if (sendBytes == -1)
+        {
+            printf("[SERVER] Failed to send data to client: %s\n", strerror(errno));
+            return -1;
+        }
+        totalSend += sendBytes;
+        byteLeft -= sendBytes;
     }
-    return sendBytes;
+    
+    return totalSend;
 }
 
 void gfs_abort(gfcontext_t **ctx){
