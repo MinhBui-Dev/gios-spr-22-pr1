@@ -197,6 +197,15 @@ int gfc_perform(gfcrequest_t **gfr) {
 
   free((void*)resHeader);
 
+  //validate scheme from response header
+  if (strcmp(scheme, "GETFILE") != 0)
+  {
+    (*gfr)->status = GF_INVALID;
+    free((void*)buffer);
+    return -1;
+  }
+  
+
   //validate status from response header
   if (strcmp(resStatus, "OK") == 0)
   {
@@ -243,8 +252,7 @@ int gfc_perform(gfcrequest_t **gfr) {
       printf("[CLIENT] Failed to receive from server socket: %s\n", strerror(errno));
       return - 1;
     }
-    
-    buffer[recvByte] = '\0';
+
     (*gfr)->bytesReceived += recvByte;
 
     //printf("Byte received from server %d, Total Byte %d \n", recvByte, (*gfr)->bytesReceived);
