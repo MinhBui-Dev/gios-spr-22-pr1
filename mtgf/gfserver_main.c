@@ -150,6 +150,8 @@ void *gfs_transfer(void *arg)
 		request = steque_pop(requestQueue);
 
     pthread_mutex_unlock(&mutex);
+
+    pthread_cond_signal(&work_cond);
     //printf("Thread #%d working \n",*(int*)arg);
 		int fileD;
 
