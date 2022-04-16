@@ -1,7 +1,6 @@
 #include "gfserver-student.h"
 #include "gfserver.h"
 #include "content.h"
-#include "workload.h"
 #include "stdlib.h"
 #include "pthread.h"
 #include "steque.h"
@@ -21,6 +20,7 @@ extern steque_t *requestQueue;
 //
 gfh_error_t gfs_handler(gfcontext_t **ctx, const char *path, void* arg){
 	file_request *request;
+
 	if ((request=(file_request*)malloc(sizeof(file_request))) == NULL)
 	{
 		printf("Failed to allocate memory for job request");
@@ -31,10 +31,11 @@ gfh_error_t gfs_handler(gfcontext_t **ctx, const char *path, void* arg){
 		return gfh_failure;
 	}	
 	request->ctx = *ctx;
-	request->path = path;
-	printf("Inside Handler Path is %s\n", request->path);
+	(request->path) = path;
+	//printf("Inside Handler Path %s\n",request->path);
 	pthread_mutex_lock(&mutex);
 	steque_enqueue(requestQueue,request);
+	//printf("Queue Size is %d\n",steque_size(requestQueue));
 	pthread_mutex_unlock(&mutex);
 	pthread_cond_signal(&work_cond);
 	*ctx = NULL;

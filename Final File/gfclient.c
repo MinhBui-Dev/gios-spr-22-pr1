@@ -26,6 +26,7 @@ struct gfcrequest_t
 // optional function for cleaup processing.
 void gfc_cleanup(gfcrequest_t **gfr) {
   free((void*)*gfr);
+  *gfr = NULL;
 }
 
 gfcrequest_t *gfc_create() {
@@ -141,19 +142,36 @@ int gfc_perform(gfcrequest_t **gfr) {
    
   memset(buffer,0,MAXBUFFER);
   memset(message,0,MAXBUFFER);
-  
-  do
+  int headerfound = 0;
+  while (1)
   {
     if ((recvByte = recv(serverSocket,buffer,MAXBUFFER-1,0)) == -1)
     {
       printf("[CLIENT] Failed to receive from client socket: %s\n", strerror(errno));
+      return -1;
     }
 
     //printf("Byte received from server %d \n", recvByte);
 
     buffer[recvByte] = '\0';
     strcat(message,buffer);
-  } while (strstr(message,MARKER) == NULL);
+    if (strstr(message,MARKER) != NULL)
+    {
+      headerfound = 1;
+      break;
+    }
+
+    if (recvByte == 0 && headerfound == 0)
+    {
+      printf("[CLIENT] Failed to receive correct header.\n");
+      (*gfr)->status = GF_INVALID;
+      free((void*)message);
+      free((void*)buffer);
+      return -1;
+    }
+    
+  }
+  
   
   int resHeaderSize = strstr(message,MARKER)-message + sizeof(MARKER);
   char *resHeader = malloc(resHeaderSize*sizeof(char)); //char string to hold client message
@@ -186,16 +204,19 @@ int gfc_perform(gfcrequest_t **gfr) {
   else if (strcmp(resStatus, "FILE_NOT_FOUND") == 0)
   {
     (*gfr)->status = GF_FILE_NOT_FOUND;
-    return -1;
+    free((void*)buffer);
+    return 0;
   }
   else if (strcmp(resStatus, "ERROR") == 0)
   {
     (*gfr)->status = GF_ERROR;
-    return -1;
+    free((void*)buffer);
+    return 0;
   }
   else
   {
     (*gfr)->status = GF_INVALID;
+    free((void*)buffer);
     return -1;
   }
 
@@ -204,8 +225,13 @@ int gfc_perform(gfcrequest_t **gfr) {
   (*gfr)->bytesReceived = recvByte - resHeaderSize +1;
  
   //printf("Byte receiced %d, File Len %d", (*gfr)->bytesReceived, (*gfr)->fileLen);
-
-  (*gfr)->writefunc(buffer +resHeaderSize - 1,recvByte-resHeaderSize-1,(*gfr)->writearg);
+  //if there is some content from the first header, send to write function
+  if ((*gfr)->bytesReceived > 0)
+  {
+    (*gfr)->writefunc(buffer +resHeaderSize - 1,recvByte-resHeaderSize-1,(*gfr)->writearg);
+  }
+  
+  
   
   
   while ((*gfr)->bytesReceived < (*gfr)->fileLen)
@@ -213,19 +239,27 @@ int gfc_perform(gfcrequest_t **gfr) {
     memset(buffer,0,MAXBUFFER);
     if ((recvByte = recv(serverSocket,buffer,MAXBUFFER-1,0)) == -1)
     {
-      printf("[CLIENT] Failed to receive from client socket: %s\n", strerror(errno));
+      printf("[CLIENT] Failed to receive from server socket: %s\n", strerror(errno));
+      return - 1;
     }
     
     buffer[recvByte] = '\0';
     (*gfr)->bytesReceived += recvByte;
 
     //printf("Byte received from server %d, Total Byte %d \n", recvByte, (*gfr)->bytesReceived);
-
+    if (recvByte == 0 && (*gfr)->bytesReceived < (*gfr)->fileLen)
+    {
+      printf("[CLIENT] Failed to receive full data.\n");
+      (*gfr)->status = GF_OK;
+      free((void*)buffer);
+      return -1;
+    }
+    
     (*gfr)->writefunc(buffer,recvByte,(*gfr)->writearg);
   }
   free((void*)buffer);
   close(serverSocket);
-  return 1;
+  return 0;
 }
 
 void gfc_set_headerarg(gfcrequest_t **gfr, void *headerarg) {

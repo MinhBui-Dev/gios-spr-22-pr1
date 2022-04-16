@@ -59,7 +59,6 @@ void gfserver_serve(gfserver_t **gfs){
     int status, recvByte/*, sendByte*/; //to store return from send()/recv()
     int yes = 1; //set option value for setsockopt 
 
-
     sprintf(portNoChar,"%d",(*gfs)->port); //convert port number from int to string
 
     memset(&hints,0, sizeof hints); //make sure hints is emptty
@@ -154,17 +153,19 @@ void gfserver_serve(gfserver_t **gfs){
         
             
         strncpy(header,message,strstr(message,MARKER)-message);
-        printf("[SERVER] Received [CLIENT]'s header: %s\n",header);
+        //printf("[SERVER] Received [CLIENT]'s header: %s\n",header);
 
         //Check Header
         const char *scheme_c = strtok(header," ");
         const char *method_c = strtok(NULL," ");
-        const char *path_c = strtok(NULL," ");
-        printf("Path is %s\n",path_c);
-        if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(path_c,"/",1) == 0)
+        char *path_c = strtok(NULL," ");
+        char path[strlen(path_c)+1];
+        strcpy(path,path_c);
+        
+        if (strcmp(scheme_c,SCHEME) == 0 && strcmp(method_c,METHOD) == 0 && strncmp(path,"/",1) == 0)
         {
-            printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
-            (*gfs)->handler(&ctx,path_c,(*gfs)->handlerarg);
+            //printf("[SERVER] Header request is valid! Sending [PATH] to handler now.\n");
+            (*gfs)->handler(&ctx,path,(*gfs)->handlerarg);
         }
         else
         {
@@ -173,6 +174,7 @@ void gfserver_serve(gfserver_t **gfs){
         }
             
         free(ctx);
+        
 
     }
     
@@ -198,29 +200,29 @@ ssize_t gfs_sendheader(gfcontext_t **ctx, gfstatus_t status, size_t file_len){
         strcat(responseHeader," OK ");
         strcat(responseHeader,lengthInChar);
         strcat(responseHeader,MARKER); //<scheme> <status> <length>\r\n\r\n
-        printf("[SERVER] Response header sent: %s\n",responseHeader);
+        //printf("[SERVER] Response header sent: %s\n",responseHeader);
         sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
         //printf("SERVER SENT %d Number of Byte",sendByte);
         return sendByte;
     case 400: //status = FILE_NOT_FOUND
         strcpy(responseHeader,SCHEME);
         strcat(responseHeader," FILE_NOT_FOUND");
+        
         strcat(responseHeader,MARKER); //<scheme> <status>\r\n\r\n
-        printf("[SERVER] Response header sent: %s\n",responseHeader);
         sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
         return sendByte;
     case 500: ; //status = ERROR
         strcpy(responseHeader,SCHEME);
         strcat(responseHeader," ERROR");
         strcat(responseHeader,MARKER); //<scheme> <status>\r\n\r\n
-        printf("[SERVER] Response header sent: %s\n",responseHeader);
+        //printf("[SERVER] Response header sent: %s\n",responseHeader);
         sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
         return sendByte;   
     case 600: ; //status = INVALID
         strcpy(responseHeader,SCHEME);
         strcat(responseHeader," INVALID");
         strcat(responseHeader,MARKER); //<scheme> <status>\r\n\r\n
-        printf("[SERVER] Response header sent: %s\n",responseHeader);
+        //printf("[SERVER] Response header sent: %s\n",responseHeader);
         sendByte = send((*ctx)->clientSocket, responseHeader, strlen(responseHeader),0);
         return sendByte;   
     }
